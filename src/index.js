@@ -1,5 +1,7 @@
 import axios from 'axios';
 import Notiflix from 'notiflix';
+import SimpleLightbox from 'simplelightbox';
+import 'simplelightbox/dist/simple-lightbox.min.css';
 
 const searchFormEl = document.querySelector('.search-form');
 const galleryEl = document.querySelector('.gallery');
@@ -28,11 +30,17 @@ async function fetchImages(searchQuery, page) {
 
     const result = response.data;
     totalHits = result.totalHits;
+    if (totalHits === 0) {
+      Notiflix.Notify.failure(
+        'Sorry, there are no images matching your search query. Please try again.'
+      );
+    } else if (page === 1) {
+      Notiflix.Notify.success(`Hooray! We found ${totalHits} images.`);
+    }
 
     return result.hits;
   } catch (error) {
     console.log(error.message);
-    throw error;
   }
 }
 
@@ -56,10 +64,12 @@ function renderGal(images) {
   }
 
   const galleryMarkup = images
-    .map((image) => {
+    .map(image => {
       return `
         <div class="photo-card">
-          <img src="${image.webformatURL}" alt="${image.tags}" loading="lazy" />
+        <a class="gallery__link" href="${image.largeImageURL}">
+        <img class="content-img" src="${image.webformatURL}" alt="${image.tags}" loading="lazy" />
+      </a>
           <div class="info">
             <p class="info-item">
               <b>Likes:</b> ${image.likes}
@@ -97,12 +107,23 @@ async function loadMore() {
 
     if (counterPage * IMG_IN_PAGE >= totalHits) {
       loadBtn.style.display = 'none';
-      Notiflix.Notify.info("We're sorry, but you've reached the end of search results.");
+      Notiflix.Notify.info(
+        "We're sorry, but you've reached the end of search results."
+      );
     }
   } catch {
     Notiflix.Notify.failure('Failed to fetch more images. Please try again.');
   }
 }
 
+function onClick (event) {
+  event.preventDefault();
+
+    const lightbox = new SimpleLightbox(".gallery a");
+
+    galleryEl.removeEventListener("click", onClick)  
+};
+
 searchFormEl.addEventListener('submit', fetchSearch);
+galleryEl.addEventListener('click', onClick)
 loadBtn.addEventListener('click', loadMore);
